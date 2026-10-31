@@ -506,7 +506,7 @@ private fun LoadingScheduleCard() {
     StatusCard(
         icon = Icons.Default.Schedule,
         title = "正在加载课表",
-        description = "正在读取本机课表数据",
+        description = "正在读取课表数据",
     )
 }
 
@@ -536,7 +536,7 @@ private fun NoConfirmedScheduleCard(onImportClick: () -> Unit) {
     StatusCard(
         icon = Icons.Default.CalendarToday,
         title = "还没有课表",
-        description = "导入学校下发的课表 Excel，离线也能看",
+        description = "导入学校下发的课表 Excel 文件",
         actionLabel = "导入课表",
         onAction = onImportClick,
     )
@@ -595,7 +595,7 @@ private fun CourseDetailSheet(course: Course, onDismiss: () -> Unit) {
             DetailRow(Icons.Default.Class, "开课周次", formatWeeks(course.weeks))
             DetailRow(Icons.Default.School, "课程代码", course.code)
             Spacer(Modifier.height(8.dp)); HorizontalDivider(color = Line); Spacer(Modifier.height(14.dp))
-            Text("课表数据来自本机导入", style = MaterialTheme.typography.bodySmall, color = Moss)
+            Text("课程信息来自已导入课表", style = MaterialTheme.typography.bodySmall, color = Moss)
         }
     }
 }

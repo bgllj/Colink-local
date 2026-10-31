@@ -152,7 +152,7 @@ private fun ProfileHero(profile: UserProfile) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(profile.name.ifBlank { "同学" }, style = MaterialTheme.typography.titleMedium, color = Ink, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(4.dp))
-                Text("本机资料 · 离线保存", style = MaterialTheme.typography.bodySmall, color = Moss)
+                Text("个人信息与课表设置", style = MaterialTheme.typography.bodySmall, color = Moss)
             }
         }
     }
@@ -173,7 +173,7 @@ private fun ProfileOverview(
             SettingsRow(
                 icon = Icons.Default.Person,
                 title = "显示名称",
-                description = "用于首页问候，不同步到服务器",
+                description = "用于首页问候",
                 onClick = onEdit,
                 trailing = "编辑",
             )
@@ -189,14 +189,14 @@ private fun ProfileOverview(
                 androidx.compose.material3.HorizontalDivider(color = Color(0xFFE7ECE8), modifier = Modifier.padding(start = 68.dp, end = 16.dp))
                 SettingsRow(
                     icon = Icons.Default.FolderOpen,
-                    title = "本地课表",
+                    title = "课表文件",
                     description = sourceFileName?.let { "$it · ${formatImportedAt(importedAt)} 导入" } ?: "尚未导入课表",
                     onClick = onImportClick,
                     trailing = if (sourceFileName == null) "导入" else "更换",
                 )
             }
         }
-        Text("课表保存在本机，可离线查看。", modifier = Modifier.padding(horizontal = 2.dp), style = MaterialTheme.typography.bodySmall, color = Moss)
+        Text("可在此管理个人资料与课程安排。", modifier = Modifier.padding(horizontal = 2.dp), style = MaterialTheme.typography.bodySmall, color = Moss)
     }
 }
 

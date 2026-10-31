@@ -114,9 +114,9 @@ fun HomeScreen(
             }
         }
         when (loadState) {
-            CourseLoadState.Loading -> item { HomeStatus("正在读取本地课表", "请稍候片刻。") }
+            CourseLoadState.Loading -> item { HomeStatus("正在读取课表", "请稍候片刻。") }
             CourseLoadState.NoClassSelected -> item {
-                HomeActionStatus("还没有导入课表", "选择学校导出的课表文件，解析和保存都在本机完成。", "导入课表", onImportClick)
+                HomeActionStatus("还没有导入课表", "选择学校导出的课表文件，导入后即可查看课程安排。", "导入课表", onImportClick)
             }
             is CourseLoadState.Error -> item {
                 HomeErrorStatus(loadState.message, onRetry, onImportClick)

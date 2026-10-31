@@ -297,7 +297,7 @@ fun ImportScreen(
         AlertDialog(
             onDismissRequest = { replaceDialogVisible = false },
             title = { Text("替换已有课表") },
-            text = { Text("已有本地课表，替换后原课表将被覆盖删除。确认替换？") },
+            text = { Text("已有课表，替换后原课表将被覆盖删除。确认替换？") },
             confirmButton = {
                 TextButton(onClick = { scope.launch { confirmNow(replace = true) } }) { Text("替换") }
             },
@@ -361,7 +361,7 @@ private fun ImportPickContent(onPick: () -> Unit) {
                 Text("导入课表 Excel", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(5.dp))
                 Text(
-                    "选择学校下发的课表文件（.xls / .xlsx），解析与导入均在本机完成，离线也能看",
+                    "选择学校下发的课表文件（.xls / .xlsx）",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Moss,
                     textAlign = TextAlign.Center,
