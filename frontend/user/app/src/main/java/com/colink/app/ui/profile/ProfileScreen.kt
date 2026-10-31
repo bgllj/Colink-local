@@ -1,5 +1,7 @@
 package com.colink.app.ui.profile
 
+/* Settings layout adapted from ShiGuangSchedule v2.1.0 (Apache-2.0). */
+
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -83,13 +85,18 @@ fun ProfileScreen(
     var draft by remember(profile) { mutableStateOf(profile) }
     LazyColumn(
         modifier = modifier.fillMaxSize().background(Paper),
-        contentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
+        contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Text("我的", style = MaterialTheme.typography.headlineMedium, color = Ink, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(4.dp))
-            Text("个人资料与本地课表设置", style = MaterialTheme.typography.bodyMedium, color = Moss)
+            Text(
+                "我的",
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.titleLarge,
+                color = Ink,
+                fontWeight = FontWeight.Bold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
         }
         item { ProfileHero(profile) }
         item {
@@ -136,16 +143,16 @@ fun ProfileScreen(
 
 @Composable
 private fun ProfileHero(profile: UserProfile) {
-    Card(shape = RoundedCornerShape(22.dp), colors = CardDefaults.cardColors(containerColor = Ink), modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(horizontal = 20.dp, vertical = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = CircleShape, color = Color.White.copy(alpha = .14f), modifier = Modifier.size(54.dp)) {
-                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, contentDescription = null, tint = Color.White, modifier = Modifier.size(27.dp)) }
+    Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = PaperLight), elevation = CardDefaults.cardElevation(defaultElevation = 1.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(shape = CircleShape, color = GreenSoft, modifier = Modifier.size(48.dp)) {
+                Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Person, contentDescription = null, tint = Green, modifier = Modifier.size(24.dp)) }
             }
-            Spacer(Modifier.size(15.dp))
+            Spacer(Modifier.size(13.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(profile.name.ifBlank { "同学" }, style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+                Text(profile.name.ifBlank { "同学" }, style = MaterialTheme.typography.titleMedium, color = Ink, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(4.dp))
-                Text("本机资料", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = .74f))
+                Text("本机资料 · 离线保存", style = MaterialTheme.typography.bodySmall, color = Moss)
             }
         }
     }
@@ -195,9 +202,9 @@ private fun ProfileOverview(
 
 @Composable
 private fun SettingsSection(title: String, content: @Composable () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, style = MaterialTheme.typography.titleMedium, color = Ink, fontWeight = FontWeight.SemiBold)
-        Surface(shape = RoundedCornerShape(18.dp), color = PaperLight, modifier = Modifier.fillMaxWidth()) { content() }
+        Surface(shape = RoundedCornerShape(12.dp), color = PaperLight, modifier = Modifier.fillMaxWidth()) { content() }
     }
 }
 

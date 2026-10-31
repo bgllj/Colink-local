@@ -1,5 +1,7 @@
 package com.colink.app.ui.schedule
 
+/* Weekly timetable UI adapted from ShiGuangSchedule v2.1.0 (Apache-2.0). */
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,7 +15,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
@@ -80,7 +81,6 @@ import com.colink.app.ui.theme.Ink
 import com.colink.app.ui.theme.Line
 import com.colink.app.ui.theme.Moss
 import com.colink.app.ui.theme.PaperLight
-import com.colink.app.ui.theme.courseAccent
 import com.colink.app.ui.theme.courseTint
 import java.time.LocalDate
 import java.time.format.TextStyle as DateTextStyle
@@ -88,8 +88,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.delay
 
-private val weekRangeFormatter = DateTimeFormatter.ofPattern("M月d日", Locale.CHINA)
-private val dayDateFormatter = DateTimeFormatter.ofPattern("M/d", Locale.CHINA)
+private val dayDateFormatter = DateTimeFormatter.ofPattern("MM-dd", Locale.CHINA)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -191,48 +190,42 @@ private fun ScheduleHeader(
     onNextWeek: () -> Unit,
     onToday: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().pointerInput(weekStart) {
-                var dragDistance = 0f
-                detectHorizontalDragGestures(
-                    onDragEnd = {
-                        if (dragDistance > 56f) onPreviousWeek()
-                        if (dragDistance < -56f) onNextWeek()
-                        dragDistance = 0f
-                    },
-                    onHorizontalDrag = { _, amount -> dragDistance += amount },
-                )
-            },
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                "本周课程",
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Ink,
-                maxLines = 1,
+    Row(
+        modifier = Modifier.fillMaxWidth().pointerInput(weekStart) {
+            var dragDistance = 0f
+            detectHorizontalDragGestures(
+                onDragEnd = {
+                    if (dragDistance > 56f) onPreviousWeek()
+                    if (dragDistance < -56f) onNextWeek()
+                    dragDistance = 0f
+                },
+                onHorizontalDrag = { _, amount -> dragDistance += amount },
             )
-            IconButton(onClick = onPreviousWeek) {
-                Icon(Icons.Default.ChevronLeft, contentDescription = "上一周", tint = Green)
-            }
-            TextButton(onClick = onWeekPickerClick) {
-                Text(weekLabel, color = Green, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                Icon(Icons.Default.ArrowDropDown, contentDescription = "选择周次", tint = Green)
-            }
-            IconButton(onClick = onNextWeek) {
-                Icon(Icons.Default.ChevronRight, contentDescription = "下一周", tint = Green)
+        },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "本周课程",
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = Ink,
+            maxLines = 1,
+        )
+        if (!isCurrentWeek) {
+            TextButton(onClick = onToday, contentPadding = PaddingValues(horizontal = 4.dp)) {
+                Text("本周", color = Green, maxLines = 1)
             }
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "${weekStart.format(weekRangeFormatter)} – ${weekStart.plusDays(6).format(weekRangeFormatter)}",
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodySmall,
-                color = Moss,
-            )
-            if (!isCurrentWeek) TextButton(onClick = onToday) { Text("本周") }
+        IconButton(onClick = onPreviousWeek) {
+            Icon(Icons.Default.ChevronLeft, contentDescription = "上一周", tint = Green)
+        }
+        TextButton(onClick = onWeekPickerClick, contentPadding = PaddingValues(horizontal = 4.dp)) {
+            Text(weekLabel, color = Green, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            Icon(Icons.Default.ArrowDropDown, contentDescription = "选择周次", tint = Green)
+        }
+        IconButton(onClick = onNextWeek) {
+            Icon(Icons.Default.ChevronRight, contentDescription = "下一周", tint = Green)
         }
     }
 }
@@ -293,94 +286,104 @@ private fun WeeklyTimetableGrid(
 ) {
     val allCourses = coursesByDate.values.flatten()
     val timedCourses = allCourses.filter { it.start != null && it.end != null }
-    val firstPeriod = timedCourses.mapNotNull { it.start }.minOrNull() ?: 1
+    val firstPeriod = 1
     val lastPeriod = timedCourses.mapNotNull { it.end }.maxOrNull() ?: firstPeriod
-    val periodCount = if (timedCourses.isEmpty()) 0 else (lastPeriod - firstPeriod + 1).coerceAtLeast(1)
+    val periodCount = if (timedCourses.isEmpty()) 0 else lastPeriod.coerceAtLeast(firstPeriod)
     val rowHeight = 60.dp
-    val periodAxisWidth = 36.dp
-    val dayCellWidth = 64.dp
+    val periodAxisWidth = 40.dp
     val dayScrollState = rememberScrollState()
 
-    Surface(shape = RoundedCornerShape(7.dp), color = PaperLight, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(2.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier.width(periodAxisWidth).height(48.dp).border(0.5.dp, Line),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text("${days.firstOrNull()?.year ?: today.year}年", style = MaterialTheme.typography.labelSmall, color = Moss, textAlign = TextAlign.Center)
+    BoxWithConstraints(Modifier.fillMaxWidth().background(PaperLight)) {
+        val dayCellWidth = ((maxWidth - periodAxisWidth) / 5f).coerceAtLeast(48.dp)
+        Column(Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.width(periodAxisWidth).height(45.dp).border(0.5.dp, Line),
+                contentAlignment = Alignment.Center,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        "${days.firstOrNull()?.year ?: today.year}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Moss,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text("年", style = MaterialTheme.typography.labelSmall, color = Moss, textAlign = TextAlign.Center)
                 }
-                Row(Modifier.weight(1f).horizontalScroll(dayScrollState)) {
-                    days.forEach { date ->
-                        val isToday = date == today
-                        Column(
-                            modifier = Modifier
-                                .width(dayCellWidth)
-                                .height(48.dp)
-                                .padding(horizontal = 1.dp)
-                                .background(if (isToday) GreenSoft else PaperLight, RoundedCornerShape(4.dp))
-                                .border(0.5.dp, Line, RoundedCornerShape(4.dp)),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Text(
-                                date.dayOfWeek.getDisplayName(DateTextStyle.SHORT, Locale.CHINA),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (isToday) Green else Moss,
-                                fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                            )
-                            Text(date.format(dayDateFormatter), style = MaterialTheme.typography.labelSmall, color = Ink)
-                        }
+            }
+            Row(Modifier.weight(1f).horizontalScroll(dayScrollState)) {
+                days.forEach { date ->
+                    val isToday = date == today
+                    Column(
+                        modifier = Modifier
+                            .width(dayCellWidth)
+                            .height(45.dp)
+                            .background(if (isToday) GreenSoft.copy(alpha = 0.34f) else PaperLight)
+                            .border(0.5.dp, Line),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Text(
+                            date.dayOfWeek.getDisplayName(DateTextStyle.SHORT, Locale.CHINA).removePrefix("周"),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isToday) Green else Moss,
+                            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                        )
+                        Text(date.format(dayDateFormatter), style = MaterialTheme.typography.labelSmall, color = Ink)
                     }
                 }
             }
-            if (periodCount > 0) {
-                Row(verticalAlignment = Alignment.Top) {
-                    Column {
-                        repeat(periodCount) { index ->
-                            Box(
-                                Modifier.width(periodAxisWidth).height(rowHeight).border(0.5.dp, Line),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text("${firstPeriod + index}", style = MaterialTheme.typography.labelSmall, color = Moss)
-                            }
+        }
+        if (periodCount > 0) {
+            Row(verticalAlignment = Alignment.Top) {
+                Column {
+                    repeat(periodCount) { index ->
+                        Box(
+                            Modifier.width(periodAxisWidth).height(rowHeight).border(0.5.dp, Line),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("${firstPeriod + index}", style = MaterialTheme.typography.labelSmall, color = Moss)
                         }
                     }
-                    Row(Modifier.weight(1f).horizontalScroll(dayScrollState)) {
-                        days.forEach { date -> DayCourseColumn(
+                }
+                Row(Modifier.weight(1f).horizontalScroll(dayScrollState)) {
+                    days.forEach { date ->
+                        DayCourseColumn(
                             modifier = Modifier.width(dayCellWidth),
                             courses = coursesByDate[date].orEmpty().filter { it.start != null && it.end != null },
                             firstPeriod = firstPeriod,
                             periodCount = periodCount,
                             rowHeight = rowHeight,
                             onCourseClick = onCourseClick,
-                        ) }
+                        )
                     }
                 }
             }
-            val unknownCoursesExist = allCourses.any { it.start == null || it.end == null }
-            if (unknownCoursesExist) {
-                Row(verticalAlignment = Alignment.Top) {
-                    Box(
-                        Modifier.width(periodAxisWidth).height(48.dp).border(0.5.dp, Line),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text("—", style = MaterialTheme.typography.labelSmall, color = Moss, textAlign = TextAlign.Center)
-                    }
-                    Row(Modifier.weight(1f).horizontalScroll(dayScrollState)) {
-                        days.forEach { date ->
-                            Column(Modifier.width(dayCellWidth)) {
-                                coursesByDate[date].orEmpty()
-                                    .filter { it.start == null || it.end == null }
-                                    .forEach { course -> UnscheduledCourseBlock(course, onCourseClick) }
-                                if (coursesByDate[date].orEmpty().none { it.start == null || it.end == null }) {
-                                    Box(Modifier.fillMaxWidth().height(48.dp).border(0.5.dp, Line))
-                                }
+        }
+        val unknownCoursesExist = allCourses.any { it.start == null || it.end == null }
+        if (unknownCoursesExist) {
+            Row(verticalAlignment = Alignment.Top) {
+                Box(
+                    Modifier.width(periodAxisWidth).height(48.dp).border(0.5.dp, Line),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("—", style = MaterialTheme.typography.labelSmall, color = Moss, textAlign = TextAlign.Center)
+                }
+                Row(Modifier.weight(1f).horizontalScroll(dayScrollState)) {
+                    days.forEach { date ->
+                        Column(Modifier.width(dayCellWidth)) {
+                            coursesByDate[date].orEmpty()
+                                .filter { it.start == null || it.end == null }
+                                .forEach { course -> UnscheduledCourseBlock(course, onCourseClick) }
+                            if (coursesByDate[date].orEmpty().none { it.start == null || it.end == null }) {
+                                Box(Modifier.fillMaxWidth().height(48.dp).border(0.5.dp, Line))
                             }
                         }
                     }
                 }
             }
+        }
         }
     }
 }
@@ -424,32 +427,28 @@ private fun DayCourseColumn(
 
 @Composable
 private fun WeekCourseBlock(course: Course, modifier: Modifier, onClick: () -> Unit) {
-    Row(
+    Column(
         modifier = modifier
             .background(courseTint(course.id), RoundedCornerShape(4.dp))
             .clickable(onClick = onClick)
-            .padding(3.dp),
-        verticalAlignment = Alignment.Top,
+            .padding(horizontal = 4.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Box(Modifier.width(3.dp).fillMaxHeight().background(courseAccent(course.id), RoundedCornerShape(3.dp)))
-        Spacer(Modifier.width(3.dp))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            course.name,
+            color = Ink,
+            style = TextStyle(fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.Bold),
+            maxLines = 4,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (course.room.isNotBlank()) {
             Text(
-                course.name,
-                color = Ink,
-                style = TextStyle(fontSize = 10.sp, lineHeight = 12.sp, fontWeight = FontWeight.SemiBold),
-                maxLines = 3,
+                "@${course.room}",
+                color = Ink.copy(alpha = 0.82f),
+                style = TextStyle(fontSize = 9.sp, lineHeight = 11.sp),
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (course.room.isNotBlank()) {
-                Text(
-                    course.room,
-                    color = Moss,
-                    style = TextStyle(fontSize = 8.sp, lineHeight = 9.sp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
         }
     }
 }
@@ -461,9 +460,9 @@ private fun UnscheduledCourseBlock(course: Course, onCourseClick: (Course) -> Un
         modifier = Modifier
             .fillMaxWidth()
             .padding(1.dp)
-            .background(courseTint(course.id), RoundedCornerShape(6.dp))
+            .background(courseTint(course.id), RoundedCornerShape(4.dp))
             .clickable { onCourseClick(course) }
-            .padding(horizontal = 3.dp, vertical = 5.dp),
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         color = Ink,
         style = TextStyle(fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.SemiBold),
         maxLines = 3,

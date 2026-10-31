@@ -1,14 +1,19 @@
 package com.colink.app.ui
 
+/* Navigation styling adapted from ShiGuangSchedule v2.1.0 (Apache-2.0). */
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.material.icons.filled.ViewWeek
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.ViewAgenda
+import androidx.compose.material.icons.outlined.ViewWeek
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -144,19 +149,19 @@ fun ColinkApp() {
                             NavigationBarItem(
                                 selected = selectedTab == 0,
                                 onClick = { selectedTab = 0 },
-                                icon = { Icon(Icons.Default.CalendarToday, contentDescription = "今日课表") },
+                                icon = { Icon(if (selectedTab == 0) Icons.Filled.ViewAgenda else Icons.Outlined.ViewAgenda, contentDescription = "今日课表") },
                                 label = { Text("今日课表") },
                             )
                             NavigationBarItem(
                                 selected = selectedTab == 1,
                                 onClick = { selectedTab = 1 },
-                                icon = { Icon(Icons.Default.CalendarMonth, contentDescription = "课表") },
+                                icon = { Icon(if (selectedTab == 1) Icons.Filled.ViewWeek else Icons.Outlined.ViewWeek, contentDescription = "课表") },
                                 label = { Text("课表") },
                             )
                             NavigationBarItem(
                                 selected = selectedTab == 2,
                                 onClick = { selectedTab = 2 },
-                                icon = { Icon(Icons.Default.Person, contentDescription = "我的") },
+                                icon = { Icon(if (selectedTab == 2) Icons.Filled.AccountCircle else Icons.Outlined.AccountCircle, contentDescription = "我的") },
                                 label = { Text("我的") },
                             )
                         }
@@ -241,7 +246,6 @@ private fun AppContent(
 ) {
     when (selectedTab) {
         0 -> HomeScreen(
-            profileName = profile.name,
             semesterStart = semesterStart,
             maxWeek = maxWeek,
             loadState = courseLoadState,

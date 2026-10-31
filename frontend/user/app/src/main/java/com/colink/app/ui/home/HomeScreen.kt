@@ -1,5 +1,7 @@
 package com.colink.app.ui.home
 
+/* Today timeline UI adapted from ShiGuangSchedule v2.1.0 (Apache-2.0). */
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,12 +22,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -64,7 +63,6 @@ private val dateFormatter = DateTimeFormatter.ofPattern("M月d日 · EEEE", Loca
 
 @Composable
 fun HomeScreen(
-    profileName: String,
     semesterStart: LocalDate,
     maxWeek: Int,
     loadState: CourseLoadState,
@@ -88,16 +86,22 @@ fun HomeScreen(
 
     LazyColumn(
         modifier = modifier.fillMaxSize().background(homeBackground),
-        contentPadding = PaddingValues(start = 20.dp, top = 20.dp, end = 20.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
+        contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
+            Text(
+                "今日课表",
+                modifier = Modifier.fillMaxWidth(),
+                style = MaterialTheme.typography.titleLarge,
+                color = Ink,
+                fontWeight = FontWeight.Bold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+        }
+        item {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("今日课表", style = MaterialTheme.typography.titleLarge, color = Ink, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(4.dp))
-                    Text(today.format(dateFormatter), style = MaterialTheme.typography.bodyMedium, color = Moss)
-                }
+                Text(today.format(dateFormatter), modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, color = Ink, fontWeight = FontWeight.Bold)
                 Surface(shape = RoundedCornerShape(12.dp), color = GreenSoft) {
                     Text(
                         currentWeek?.let { "第 $it 周" } ?: "学期外",
@@ -107,11 +111,6 @@ fun HomeScreen(
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
-            }
-        }
-        item {
-            Column {
-                Text("${profileName.ifBlank { "同学" }}，今天上什么课？", style = MaterialTheme.typography.headlineSmall, color = Ink, fontWeight = FontWeight.Bold)
             }
         }
         when (loadState) {
@@ -129,16 +128,13 @@ fun HomeScreen(
                 currentWeek == null -> item { HomeStatus("当前日期不在学期范围内", "可以在“我的”中检查开学时间设置。") }
                 todayCourses.isEmpty() -> item { HomeStatus("今天没有课程", "今日无课，留一点时间给自己。") }
                 else -> {
-                    item { FeaturedCourse(todayCourses.first(), todayCourses.size, currentWeek) }
-                    if (todayCourses.size > 1) {
-                        item {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("后续课程", style = MaterialTheme.typography.titleMedium, color = Ink, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                                Text("${todayCourses.size - 1} 门", style = MaterialTheme.typography.labelMedium, color = Moss)
-                            }
+                    item {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("今日课程", style = MaterialTheme.typography.titleMedium, color = Ink, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                            Text("${todayCourses.size} 门", style = MaterialTheme.typography.labelMedium, color = Moss)
                         }
-                        items(todayCourses.drop(1), key = { it.id }) { course -> HomeCourseRow(course) }
                     }
+                    items(todayCourses, key = { it.id }) { course -> HomeCourseRow(course) }
                 }
             }
         }
@@ -151,51 +147,28 @@ fun HomeScreen(
         }
     }
 }
-
-@Composable
-private fun FeaturedCourse(course: Course, courseCount: Int, week: Int) {
-    Card(
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = courseTint(course.id)),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(horizontal = 20.dp, vertical = 19.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("今日第一节", style = MaterialTheme.typography.labelLarge, color = courseAccent(course.id), modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = courseAccent(course.id), modifier = Modifier.size(19.dp))
-            }
-            Spacer(Modifier.height(12.dp))
-            Text(course.name, style = MaterialTheme.typography.headlineSmall, color = Ink, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.height(13.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Schedule, contentDescription = null, tint = Moss, modifier = Modifier.size(17.dp))
-                Spacer(Modifier.width(6.dp))
-                Text(periodLabel(course), style = MaterialTheme.typography.bodyMedium, color = Ink)
-                Spacer(Modifier.width(14.dp))
-                Icon(Icons.Default.LocationOn, contentDescription = null, tint = Moss, modifier = Modifier.size(17.dp))
-                Spacer(Modifier.width(5.dp))
-                Text(course.room, style = MaterialTheme.typography.bodyMedium, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            Spacer(Modifier.height(17.dp))
-            HorizontalDivider(color = courseAccent(course.id).copy(alpha = .22f))
-            Spacer(Modifier.height(11.dp))
-            Text("今日共 $courseCount 门课程  ·  第 $week 周", style = MaterialTheme.typography.labelMedium, color = Moss)
-        }
-    }
-}
-
 @Composable
 private fun HomeCourseRow(course: Course) {
-    Surface(shape = RoundedCornerShape(16.dp), color = courseTint(course.id), modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(horizontal = 15.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Surface(shape = RoundedCornerShape(8.dp), color = PaperLight) {
-                Text(periodLabel(course), Modifier.padding(horizontal = 9.dp, vertical = 7.dp), color = courseAccent(course.id), style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
-            }
-            Spacer(Modifier.width(13.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(course.name, style = MaterialTheme.typography.bodyLarge, color = Ink, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(4.dp))
-                Text(course.room, style = MaterialTheme.typography.bodySmall, color = Moss, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        Column(Modifier.width(72.dp).padding(top = 8.dp), horizontalAlignment = Alignment.End) {
+            Text(course.start?.let { "第 $it 节" } ?: "待定", style = MaterialTheme.typography.labelLarge, color = Ink, fontWeight = FontWeight.Bold)
+            course.end?.let { Text("至第 $it 节", style = MaterialTheme.typography.labelSmall, color = Moss) }
+        }
+        Spacer(Modifier.width(12.dp))
+        Card(
+            modifier = Modifier.weight(1f),
+            colors = CardDefaults.cardColors(containerColor = courseTint(course.id)),
+            shape = MaterialTheme.shapes.medium,
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        ) {
+            Box(Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 12.dp)) {
+                    Text(course.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    if (course.room.isNotBlank()) {
+                        Text("@${course.room}", style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = 0.78f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+                Box(Modifier.width(4.dp).matchParentSize().background(courseAccent(course.id)))
             }
         }
     }
@@ -247,10 +220,4 @@ private fun HomeErrorStatus(message: String, onRetry: () -> Unit, onImportClick:
             }
         }
     }
-}
-
-private fun periodLabel(course: Course): String {
-    val start = course.start
-    val end = course.end
-    return if (start == null || end == null) "节次未定" else "第 $start–$end 节"
 }
