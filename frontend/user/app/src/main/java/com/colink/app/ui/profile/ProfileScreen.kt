@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -50,15 +52,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.colink.app.UserProfile
+import com.colink.app.ui.theme.AppThemePalette
 import com.colink.app.ui.theme.Green
 import com.colink.app.ui.theme.GreenSoft
 import com.colink.app.ui.theme.Ink
+import com.colink.app.ui.theme.Line
 import com.colink.app.ui.theme.Moss
 import com.colink.app.ui.theme.Paper
 import com.colink.app.ui.theme.PaperLight
@@ -79,6 +82,10 @@ fun ProfileScreen(
     sourceFileName: String? = null,
     importedAt: String? = null,
     onImportClick: () -> Unit = {},
+    showWeekends: Boolean,
+    onShowWeekendsChange: (Boolean) -> Unit,
+    appThemePalette: AppThemePalette,
+    onAppThemePaletteChange: (AppThemePalette) -> Unit,
 ) {
     var editing by rememberSaveable { mutableStateOf(false) }
     var editingSemesterStart by rememberSaveable { mutableStateOf(false) }
@@ -118,6 +125,10 @@ fun ProfileScreen(
                         semesterStart = semesterStart,
                         sourceFileName = sourceFileName,
                         importedAt = importedAt,
+                        showWeekends = showWeekends,
+                        onShowWeekendsChange = onShowWeekendsChange,
+                        appThemePalette = appThemePalette,
+                        onAppThemePaletteChange = onAppThemePaletteChange,
                         onEdit = { editing = true },
                         onEditSemesterStart = { editingSemesterStart = true },
                         onImportClick = onImportClick,
@@ -164,6 +175,10 @@ private fun ProfileOverview(
     semesterStart: LocalDate,
     sourceFileName: String?,
     importedAt: String?,
+    showWeekends: Boolean,
+    onShowWeekendsChange: (Boolean) -> Unit,
+    appThemePalette: AppThemePalette,
+    onAppThemePaletteChange: (AppThemePalette) -> Unit,
     onEdit: () -> Unit,
     onEditSemesterStart: () -> Unit,
     onImportClick: () -> Unit,
@@ -186,7 +201,7 @@ private fun ProfileOverview(
                     description = semesterStart.format(DateTimeFormatter.ofPattern("yyyy年M月d日")),
                     onClick = onEditSemesterStart,
                 )
-                androidx.compose.material3.HorizontalDivider(color = Color(0xFFE7ECE8), modifier = Modifier.padding(start = 68.dp, end = 16.dp))
+                androidx.compose.material3.HorizontalDivider(color = Line, modifier = Modifier.padding(start = 68.dp, end = 16.dp))
                 SettingsRow(
                     icon = Icons.Default.FolderOpen,
                     title = "课表文件",
@@ -194,6 +209,13 @@ private fun ProfileOverview(
                     onClick = onImportClick,
                     trailing = if (sourceFileName == null) "导入" else "更换",
                 )
+            }
+        }
+        SettingsSection(title = "显示偏好") {
+            Column {
+                WeekendPreferenceRow(showWeekends, onShowWeekendsChange)
+                androidx.compose.material3.HorizontalDivider(color = Line, modifier = Modifier.padding(start = 16.dp, end = 16.dp))
+                ThemePalettePreference(appThemePalette, onAppThemePaletteChange)
             }
         }
         Text("可在此管理个人资料与课程安排。", modifier = Modifier.padding(horizontal = 2.dp), style = MaterialTheme.typography.bodySmall, color = Moss)
@@ -228,6 +250,59 @@ private fun SettingsRow(icon: ImageVector, title: String, description: String, o
             Spacer(Modifier.size(4.dp))
         }
         Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Moss, modifier = Modifier.size(20.dp))
+    }
+}
+
+@Composable
+private fun WeekendPreferenceRow(showWeekends: Boolean, onShowWeekendsChange: (Boolean) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text("显示周末", style = MaterialTheme.typography.bodyLarge, color = Ink, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(3.dp))
+            Text(
+                if (showWeekends) "周视图显示周一至周日" else "周视图仅显示周一至周五",
+                style = MaterialTheme.typography.bodySmall,
+                color = Moss,
+            )
+        }
+        Switch(checked = showWeekends, onCheckedChange = onShowWeekendsChange)
+    }
+}
+
+@Composable
+private fun ThemePalettePreference(palette: AppThemePalette, onPaletteChange: (AppThemePalette) -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 13.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Text("全局主题", style = MaterialTheme.typography.bodyLarge, color = Ink, fontWeight = FontWeight.SemiBold)
+        Text("应用于页面背景、控件与课程卡片", style = MaterialTheme.typography.bodySmall, color = Moss)
+        Spacer(Modifier.height(3.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppThemePalette.values().forEach { option ->
+                val selected = option == palette
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = if (selected) GreenSoft else PaperLight,
+                    modifier = Modifier
+                        .weight(1f)
+                        .border(1.dp, if (selected) Green else Line, RoundedCornerShape(10.dp))
+                        .clickable { onPaletteChange(option) },
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 8.dp, vertical = 11.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Surface(shape = CircleShape, color = option.previewColor, modifier = Modifier.size(12.dp)) {}
+                        Text(option.label, style = MaterialTheme.typography.labelMedium, color = Ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+        }
     }
 }
 

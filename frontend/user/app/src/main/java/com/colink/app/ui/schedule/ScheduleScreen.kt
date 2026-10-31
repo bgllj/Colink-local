@@ -76,6 +76,7 @@ import com.colink.app.Course
 import com.colink.app.data.CourseLoadState
 import com.colink.app.semesterWeekOrNull
 import com.colink.app.ui.theme.Green
+import com.colink.app.ui.theme.AppThemePalette
 import com.colink.app.ui.theme.GreenSoft
 import com.colink.app.ui.theme.Ink
 import com.colink.app.ui.theme.Line
@@ -98,6 +99,8 @@ fun ScheduleScreen(
     loadState: CourseLoadState,
     onRetry: () -> Unit,
     onImportClick: () -> Unit = {},
+    showWeekends: Boolean = true,
+    appThemePalette: AppThemePalette = AppThemePalette.CLASSIC,
     modifier: Modifier = Modifier,
 ) {
     var today by remember { mutableStateOf(LocalDate.now()) }
@@ -112,6 +115,7 @@ fun ScheduleScreen(
     val viewDate = LocalDate.ofEpochDay(viewDateEpochDay)
     val weekStart = viewDate.minusDays((viewDate.dayOfWeek.value - 1).toLong())
     val weekDates = List(7) { index -> weekStart.plusDays(index.toLong()) }
+    val displayedWeekDates = if (showWeekends) weekDates else weekDates.take(5)
     val weekNumbers = weekDates.mapNotNull { semesterWeekOrNull(semesterStart, it, maxWeek) }.distinct()
     val currentWeekLabel = when (weekNumbers.size) {
         0 -> "学期外"
@@ -122,7 +126,7 @@ fun ScheduleScreen(
     var selectedCourse by remember { mutableStateOf<Course?>(null) }
 
     val allCourses = (loadState as? CourseLoadState.Ready)?.courses
-    val coursesByDate = weekDates.associateWith { date ->
+    val coursesByDate = displayedWeekDates.associateWith { date ->
         val dateWeek = semesterWeekOrNull(semesterStart, date, maxWeek)
         allCourses.orEmpty()
             .filter { dateWeek != null && it.day == date.dayOfWeek.value && dateWeek in it.weeks }
@@ -157,9 +161,10 @@ fun ScheduleScreen(
                 weekCourses.isEmpty() -> item { EmptyScheduleCard() }
                 else -> item {
                     WeeklyTimetableGrid(
-                        days = weekDates,
+                        days = displayedWeekDates,
                         coursesByDate = coursesByDate,
                         today = today,
+                        appThemePalette = appThemePalette,
                         onCourseClick = { selectedCourse = it },
                     )
                 }
@@ -282,6 +287,7 @@ private fun WeeklyTimetableGrid(
     days: List<LocalDate>,
     coursesByDate: Map<LocalDate, List<Course>>,
     today: LocalDate,
+    appThemePalette: AppThemePalette,
     onCourseClick: (Course) -> Unit,
 ) {
     val allCourses = coursesByDate.values.flatten()
@@ -355,6 +361,7 @@ private fun WeeklyTimetableGrid(
                             firstPeriod = firstPeriod,
                             periodCount = periodCount,
                             rowHeight = rowHeight,
+                            appThemePalette = appThemePalette,
                             onCourseClick = onCourseClick,
                         )
                     }
@@ -375,7 +382,7 @@ private fun WeeklyTimetableGrid(
                         Column(Modifier.width(dayCellWidth)) {
                             coursesByDate[date].orEmpty()
                                 .filter { it.start == null || it.end == null }
-                                .forEach { course -> UnscheduledCourseBlock(course, onCourseClick) }
+                                .forEach { course -> UnscheduledCourseBlock(course, appThemePalette, onCourseClick) }
                             if (coursesByDate[date].orEmpty().none { it.start == null || it.end == null }) {
                                 Box(Modifier.fillMaxWidth().height(48.dp).border(0.5.dp, Line))
                             }
@@ -395,6 +402,7 @@ private fun DayCourseColumn(
     firstPeriod: Int,
     periodCount: Int,
     rowHeight: Dp,
+    appThemePalette: AppThemePalette,
     onCourseClick: (Course) -> Unit,
 ) {
     val placements = placeCourses(courses)
@@ -419,6 +427,7 @@ private fun DayCourseColumn(
                     )
                     .width(laneWidth - 2.dp)
                     .height(rowHeight * duration.toFloat() - 2.dp),
+                appThemePalette = appThemePalette,
                 onClick = { onCourseClick(course) },
             )
         }
@@ -426,10 +435,10 @@ private fun DayCourseColumn(
 }
 
 @Composable
-private fun WeekCourseBlock(course: Course, modifier: Modifier, onClick: () -> Unit) {
+private fun WeekCourseBlock(course: Course, modifier: Modifier, appThemePalette: AppThemePalette, onClick: () -> Unit) {
     Column(
         modifier = modifier
-            .background(courseTint(course.id), RoundedCornerShape(4.dp))
+            .background(courseTint(course.id, appThemePalette), RoundedCornerShape(4.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 4.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -454,13 +463,13 @@ private fun WeekCourseBlock(course: Course, modifier: Modifier, onClick: () -> U
 }
 
 @Composable
-private fun UnscheduledCourseBlock(course: Course, onCourseClick: (Course) -> Unit) {
+private fun UnscheduledCourseBlock(course: Course, appThemePalette: AppThemePalette, onCourseClick: (Course) -> Unit) {
     Text(
         course.name,
         modifier = Modifier
             .fillMaxWidth()
             .padding(1.dp)
-            .background(courseTint(course.id), RoundedCornerShape(4.dp))
+            .background(courseTint(course.id, appThemePalette), RoundedCornerShape(4.dp))
             .clickable { onCourseClick(course) }
             .padding(horizontal = 4.dp, vertical = 4.dp),
         color = Ink,

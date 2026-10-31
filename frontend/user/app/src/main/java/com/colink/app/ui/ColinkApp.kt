@@ -41,6 +41,7 @@ import com.colink.app.ui.home.HomeScreen
 import com.colink.app.ui.imports.ImportScreen
 import com.colink.app.ui.profile.ProfileScreen
 import com.colink.app.ui.schedule.ScheduleScreen
+import com.colink.app.ui.theme.AppThemePalette
 import com.colink.app.ui.theme.ColinkTheme
 import com.colink.app.ui.theme.Paper
 import com.colink.app.ui.theme.PaperLight
@@ -50,9 +51,16 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun ColinkApp() {
-    ColinkTheme {
-        val context = LocalContext.current
-        val preferences = remember { context.getSharedPreferences("colink_profile", 0) }
+    val context = LocalContext.current
+    val preferences = remember { context.getSharedPreferences("colink_profile", 0) }
+    var appThemePalette by remember {
+        mutableStateOf(
+            AppThemePalette.fromStorageKey(
+                preferences.getString("appThemePalette", null) ?: preferences.getString("coursePalette", null),
+            ),
+        )
+    }
+    ColinkTheme(appThemePalette) {
         val scheduleStore = remember {
             SharedPrefsLocalScheduleStore(context.getSharedPreferences("colink_local_schedule", 0))
         }
@@ -88,6 +96,9 @@ fun ColinkApp() {
                     preferences.getString("semesterStart", null)?.let { it != "2025-09-01" } ?: false,
                 ),
             )
+        }
+        var showWeekends by remember {
+            mutableStateOf(preferences.getBoolean("showWeekends", true))
         }
         var courseLoadState by remember { mutableStateOf<CourseLoadState>(CourseLoadState.Loading) }
         var sourceFileName by remember { mutableStateOf<String?>(null) }
@@ -196,6 +207,19 @@ fun ColinkApp() {
                         padding = padding,
                         profile = profile,
                         semesterStart = semesterStart,
+                        showWeekends = showWeekends,
+                        onShowWeekendsChange = { enabled ->
+                            showWeekends = enabled
+                            preferences.edit().putBoolean("showWeekends", enabled).apply()
+                        },
+                        appThemePalette = appThemePalette,
+                        onAppThemePaletteChange = { selectedPalette ->
+                            appThemePalette = selectedPalette
+                            preferences.edit()
+                                .putString("appThemePalette", selectedPalette.storageKey)
+                                .remove("coursePalette")
+                                .apply()
+                        },
                         onSemesterStartChange = { date ->
                             semesterStart = date
                             semesterStartConfigured = true
@@ -235,6 +259,10 @@ private fun AppContent(
     padding: PaddingValues,
     profile: UserProfile,
     semesterStart: LocalDate,
+    showWeekends: Boolean,
+    onShowWeekendsChange: (Boolean) -> Unit,
+    appThemePalette: AppThemePalette,
+    onAppThemePaletteChange: (AppThemePalette) -> Unit,
     onSemesterStartChange: (LocalDate) -> Unit,
     maxWeek: Int,
     courseLoadState: CourseLoadState,
@@ -252,6 +280,7 @@ private fun AppContent(
             onRetry = onRetry,
             onOpenSchedule = { onSelectTab(1) },
             onImportClick = onImportClick,
+            appThemePalette = appThemePalette,
             modifier = Modifier.padding(padding),
         )
         1 -> ScheduleScreen(
@@ -260,12 +289,18 @@ private fun AppContent(
             loadState = courseLoadState,
             onRetry = onRetry,
             onImportClick = onImportClick,
+            showWeekends = showWeekends,
+            appThemePalette = appThemePalette,
             modifier = Modifier.padding(padding),
         )
         else -> ProfileScreen(
             profile = profile,
             semesterStart = semesterStart,
             onSemesterStartChange = onSemesterStartChange,
+            showWeekends = showWeekends,
+            onShowWeekendsChange = onShowWeekendsChange,
+            appThemePalette = appThemePalette,
+            onAppThemePaletteChange = onAppThemePaletteChange,
             onSave = onSaveProfile,
             sourceFileName = sourceFileName,
             importedAt = importedAt,

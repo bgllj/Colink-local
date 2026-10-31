@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.colink.app.Course
 import com.colink.app.data.CourseLoadState
 import com.colink.app.semesterWeekOrNull
+import com.colink.app.ui.theme.AppThemePalette
 import com.colink.app.ui.theme.Green
 import com.colink.app.ui.theme.GreenSoft
 import com.colink.app.ui.theme.Ink
@@ -58,7 +59,6 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.delay
 
-private val homeBackground = Paper
 private val dateFormatter = DateTimeFormatter.ofPattern("M月d日 · EEEE", Locale.CHINA)
 
 @Composable
@@ -69,6 +69,7 @@ fun HomeScreen(
     onRetry: () -> Unit,
     onOpenSchedule: () -> Unit,
     onImportClick: () -> Unit,
+    appThemePalette: AppThemePalette = AppThemePalette.CLASSIC,
     modifier: Modifier = Modifier,
 ) {
     var today by remember { mutableStateOf(LocalDate.now()) }
@@ -85,7 +86,7 @@ fun HomeScreen(
         .sortedBy { it.start ?: Int.MAX_VALUE }
 
     LazyColumn(
-        modifier = modifier.fillMaxSize().background(homeBackground),
+        modifier = modifier.fillMaxSize().background(Paper),
         contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -134,7 +135,7 @@ fun HomeScreen(
                             Text("${todayCourses.size} 门", style = MaterialTheme.typography.labelMedium, color = Moss)
                         }
                     }
-                    items(todayCourses, key = { it.id }) { course -> HomeCourseRow(course) }
+                    items(todayCourses, key = { it.id }) { course -> HomeCourseRow(course, appThemePalette) }
                 }
             }
         }
@@ -148,7 +149,7 @@ fun HomeScreen(
     }
 }
 @Composable
-private fun HomeCourseRow(course: Course) {
+private fun HomeCourseRow(course: Course, appThemePalette: AppThemePalette) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         Column(Modifier.width(72.dp).padding(top = 8.dp), horizontalAlignment = Alignment.End) {
             Text(course.start?.let { "第 $it 节" } ?: "待定", style = MaterialTheme.typography.labelLarge, color = Ink, fontWeight = FontWeight.Bold)
@@ -157,7 +158,7 @@ private fun HomeCourseRow(course: Course) {
         Spacer(Modifier.width(12.dp))
         Card(
             modifier = Modifier.weight(1f),
-            colors = CardDefaults.cardColors(containerColor = courseTint(course.id)),
+            colors = CardDefaults.cardColors(containerColor = courseTint(course.id, appThemePalette)),
             shape = MaterialTheme.shapes.medium,
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
@@ -168,7 +169,7 @@ private fun HomeCourseRow(course: Course) {
                         Text("@${course.room}", style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = 0.78f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
-                Box(Modifier.width(4.dp).matchParentSize().background(courseAccent(course.id)))
+                Box(Modifier.width(4.dp).matchParentSize().background(courseAccent(course.id, appThemePalette)))
             }
         }
     }
