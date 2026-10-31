@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CalendarToday
@@ -77,11 +79,13 @@ import com.colink.app.data.CourseLoadState
 import com.colink.app.semesterWeekOrNull
 import com.colink.app.ui.theme.Green
 import com.colink.app.ui.theme.AppThemePalette
+import com.colink.app.ui.schedule.CourseCardEffect
 import com.colink.app.ui.theme.GreenSoft
 import com.colink.app.ui.theme.Ink
 import com.colink.app.ui.theme.Line
 import com.colink.app.ui.theme.Moss
 import com.colink.app.ui.theme.PaperLight
+import com.colink.app.ui.theme.courseAccent
 import com.colink.app.ui.theme.courseTint
 import java.time.LocalDate
 import java.time.format.TextStyle as DateTextStyle
@@ -101,6 +105,7 @@ fun ScheduleScreen(
     onImportClick: () -> Unit = {},
     showWeekends: Boolean = true,
     appThemePalette: AppThemePalette = AppThemePalette.CLASSIC,
+    displayPreferences: ScheduleDisplayPreferences = ScheduleDisplayPreferences.DEFAULT,
     modifier: Modifier = Modifier,
 ) {
     var today by remember { mutableStateOf(LocalDate.now()) }
@@ -165,6 +170,7 @@ fun ScheduleScreen(
                         coursesByDate = coursesByDate,
                         today = today,
                         appThemePalette = appThemePalette,
+                        displayPreferences = displayPreferences,
                         onCourseClick = { selectedCourse = it },
                     )
                 }
@@ -288,6 +294,7 @@ private fun WeeklyTimetableGrid(
     coursesByDate: Map<LocalDate, List<Course>>,
     today: LocalDate,
     appThemePalette: AppThemePalette,
+    displayPreferences: ScheduleDisplayPreferences,
     onCourseClick: (Course) -> Unit,
 ) {
     val allCourses = coursesByDate.values.flatten()
@@ -295,7 +302,7 @@ private fun WeeklyTimetableGrid(
     val firstPeriod = 1
     val lastPeriod = timedCourses.mapNotNull { it.end }.maxOrNull() ?: firstPeriod
     val periodCount = if (timedCourses.isEmpty()) 0 else lastPeriod.coerceAtLeast(firstPeriod)
-    val rowHeight = 60.dp
+    val rowHeight = displayPreferences.rowHeightDp.dp
     val periodAxisWidth = 40.dp
     val dayScrollState = rememberScrollState()
 
@@ -304,7 +311,7 @@ private fun WeeklyTimetableGrid(
         Column(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.width(periodAxisWidth).height(45.dp).border(0.5.dp, Line),
+                Modifier.width(periodAxisWidth).height(45.dp).then(gridCellModifier(displayPreferences.showGridLines)),
                 contentAlignment = Alignment.Center,
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -326,7 +333,7 @@ private fun WeeklyTimetableGrid(
                             .width(dayCellWidth)
                             .height(45.dp)
                             .background(if (isToday) GreenSoft.copy(alpha = 0.34f) else PaperLight)
-                            .border(0.5.dp, Line),
+                            .then(gridCellModifier(displayPreferences.showGridLines)),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
@@ -336,7 +343,9 @@ private fun WeeklyTimetableGrid(
                             color = if (isToday) Green else Moss,
                             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
                         )
-                        Text(date.format(dayDateFormatter), style = MaterialTheme.typography.labelSmall, color = Ink)
+                        if (displayPreferences.showDateUnderDay) {
+                            Text(date.format(dayDateFormatter), style = MaterialTheme.typography.labelSmall, color = Ink)
+                        }
                     }
                 }
             }
@@ -346,7 +355,7 @@ private fun WeeklyTimetableGrid(
                 Column {
                     repeat(periodCount) { index ->
                         Box(
-                            Modifier.width(periodAxisWidth).height(rowHeight).border(0.5.dp, Line),
+                            Modifier.width(periodAxisWidth).height(rowHeight).then(gridCellModifier(displayPreferences.showGridLines)),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text("${firstPeriod + index}", style = MaterialTheme.typography.labelSmall, color = Moss)
@@ -362,6 +371,7 @@ private fun WeeklyTimetableGrid(
                             periodCount = periodCount,
                             rowHeight = rowHeight,
                             appThemePalette = appThemePalette,
+                            displayPreferences = displayPreferences,
                             onCourseClick = onCourseClick,
                         )
                     }
@@ -372,7 +382,7 @@ private fun WeeklyTimetableGrid(
         if (unknownCoursesExist) {
             Row(verticalAlignment = Alignment.Top) {
                 Box(
-                    Modifier.width(periodAxisWidth).height(48.dp).border(0.5.dp, Line),
+                    Modifier.width(periodAxisWidth).height(48.dp).then(gridCellModifier(displayPreferences.showGridLines)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text("—", style = MaterialTheme.typography.labelSmall, color = Moss, textAlign = TextAlign.Center)
@@ -382,9 +392,9 @@ private fun WeeklyTimetableGrid(
                         Column(Modifier.width(dayCellWidth)) {
                             coursesByDate[date].orEmpty()
                                 .filter { it.start == null || it.end == null }
-                                .forEach { course -> UnscheduledCourseBlock(course, appThemePalette, onCourseClick) }
+                                .forEach { course -> UnscheduledCourseBlock(course, appThemePalette, displayPreferences, onCourseClick) }
                             if (coursesByDate[date].orEmpty().none { it.start == null || it.end == null }) {
-                                Box(Modifier.fillMaxWidth().height(48.dp).border(0.5.dp, Line))
+                                Box(Modifier.fillMaxWidth().height(48.dp).then(gridCellModifier(displayPreferences.showGridLines)))
                             }
                         }
                     }
@@ -403,13 +413,14 @@ private fun DayCourseColumn(
     periodCount: Int,
     rowHeight: Dp,
     appThemePalette: AppThemePalette,
+    displayPreferences: ScheduleDisplayPreferences,
     onCourseClick: (Course) -> Unit,
 ) {
     val placements = placeCourses(courses)
     BoxWithConstraints(modifier.height(rowHeight * periodCount.toFloat())) {
         Column {
             repeat(periodCount) {
-                Box(Modifier.fillMaxWidth().height(rowHeight).border(0.5.dp, Line))
+                Box(Modifier.fillMaxWidth().height(rowHeight).then(gridCellModifier(displayPreferences.showGridLines)))
             }
         }
         placements.forEach { placement ->
@@ -428,6 +439,7 @@ private fun DayCourseColumn(
                     .width(laneWidth - 2.dp)
                     .height(rowHeight * duration.toFloat() - 2.dp),
                 appThemePalette = appThemePalette,
+                displayPreferences = displayPreferences,
                 onClick = { onCourseClick(course) },
             )
         }
@@ -435,49 +447,125 @@ private fun DayCourseColumn(
 }
 
 @Composable
-private fun WeekCourseBlock(course: Course, modifier: Modifier, appThemePalette: AppThemePalette, onClick: () -> Unit) {
-    Column(
+private fun WeekCourseBlock(
+    course: Course,
+    modifier: Modifier,
+    appThemePalette: AppThemePalette,
+    displayPreferences: ScheduleDisplayPreferences,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(displayPreferences.cardCornerRadiusDp.dp)
+    Box(
         modifier = modifier
-            .background(courseTint(course.id, appThemePalette), RoundedCornerShape(4.dp))
+            .clip(shape)
+            .background(courseTint(course.id, appThemePalette))
             .clickable(onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 4.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Text(
-            course.name,
-            color = Ink,
-            style = TextStyle(fontSize = 11.sp, lineHeight = 13.sp, fontWeight = FontWeight.Bold),
-            maxLines = 4,
-            overflow = TextOverflow.Ellipsis,
-        )
-        if (course.room.isNotBlank()) {
+        Column(
+            Modifier.fillMaxSize().padding(
+                start = if (displayPreferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) 8.dp else 4.dp,
+                end = 4.dp,
+                top = 4.dp,
+                bottom = 4.dp,
+            ),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
             Text(
-                "@${course.room}",
-                color = Ink.copy(alpha = 0.82f),
-                style = TextStyle(fontSize = 9.sp, lineHeight = 11.sp),
-                maxLines = 2,
+                course.name,
+                color = Ink,
+                style = TextStyle(
+                    fontSize = displayPreferences.courseFontSizeSp.sp,
+                    lineHeight = (displayPreferences.courseFontSizeSp + 2).sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+                maxLines = 4,
                 overflow = TextOverflow.Ellipsis,
             )
+            if (displayPreferences.showCoursePeriod) {
+                val start = course.start
+                val end = course.end
+                if (start != null) {
+                    Text(
+                        if (end != null && end > start) "第 $start–$end 节" else "第 $start 节",
+                        color = Ink.copy(alpha = 0.82f),
+                        style = TextStyle(fontSize = (displayPreferences.courseFontSizeSp - 2).coerceAtLeast(8).sp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+            if (displayPreferences.showCourseLocation && course.room.isNotBlank()) {
+                Text(
+                    "@${course.room}",
+                    color = Ink.copy(alpha = 0.82f),
+                    style = TextStyle(
+                        fontSize = (displayPreferences.courseFontSizeSp - 2).coerceAtLeast(8).sp,
+                        lineHeight = (displayPreferences.courseFontSizeSp).sp,
+                    ),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        if (displayPreferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) {
+            Box(Modifier.width(4.dp).matchParentSize().background(courseAccent(course.id, appThemePalette)))
         }
     }
 }
 
 @Composable
-private fun UnscheduledCourseBlock(course: Course, appThemePalette: AppThemePalette, onCourseClick: (Course) -> Unit) {
-    Text(
-        course.name,
-        modifier = Modifier
+private fun UnscheduledCourseBlock(
+    course: Course,
+    appThemePalette: AppThemePalette,
+    displayPreferences: ScheduleDisplayPreferences,
+    onCourseClick: (Course) -> Unit,
+) {
+    val shape = RoundedCornerShape(displayPreferences.cardCornerRadiusDp.dp)
+    Box(
+        Modifier
             .fillMaxWidth()
             .padding(1.dp)
-            .background(courseTint(course.id, appThemePalette), RoundedCornerShape(4.dp))
-            .clickable { onCourseClick(course) }
-            .padding(horizontal = 4.dp, vertical = 4.dp),
-        color = Ink,
-        style = TextStyle(fontSize = 9.sp, lineHeight = 11.sp, fontWeight = FontWeight.SemiBold),
-        maxLines = 3,
-        overflow = TextOverflow.Ellipsis,
-    )
+            .clip(shape)
+            .background(courseTint(course.id, appThemePalette))
+            .clickable { onCourseClick(course) },
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = if (displayPreferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) 8.dp else 4.dp,
+                    end = 4.dp,
+                    top = 4.dp,
+                    bottom = 4.dp,
+                ),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                course.name,
+                color = Ink,
+                style = TextStyle(fontSize = displayPreferences.courseFontSizeSp.sp, fontWeight = FontWeight.SemiBold),
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (displayPreferences.showCourseLocation && course.room.isNotBlank()) {
+                Text(
+                    "@${course.room}",
+                    color = Ink.copy(alpha = 0.82f),
+                    style = TextStyle(fontSize = (displayPreferences.courseFontSizeSp - 2).coerceAtLeast(8).sp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        if (displayPreferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) {
+            Box(Modifier.width(4.dp).matchParentSize().background(courseAccent(course.id, appThemePalette)))
+        }
+    }
 }
+
+@Composable
+private fun gridCellModifier(showGridLines: Boolean): Modifier =
+    if (showGridLines) Modifier.border(0.5.dp, Line) else Modifier
 
 private data class CoursePlacement(val course: Course, val lane: Int, val laneCount: Int)
 

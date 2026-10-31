@@ -39,12 +39,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.colink.app.Course
 import com.colink.app.data.CourseLoadState
 import com.colink.app.semesterWeekOrNull
+import com.colink.app.ui.schedule.CourseCardEffect
 import com.colink.app.ui.theme.AppThemePalette
 import com.colink.app.ui.theme.Green
 import com.colink.app.ui.theme.GreenSoft
@@ -54,6 +57,7 @@ import com.colink.app.ui.theme.Paper
 import com.colink.app.ui.theme.PaperLight
 import com.colink.app.ui.theme.courseAccent
 import com.colink.app.ui.theme.courseTint
+import com.colink.app.ui.schedule.ScheduleDisplayPreferences
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -70,6 +74,7 @@ fun HomeScreen(
     onOpenSchedule: () -> Unit,
     onImportClick: () -> Unit,
     appThemePalette: AppThemePalette = AppThemePalette.CLASSIC,
+    displayPreferences: ScheduleDisplayPreferences = ScheduleDisplayPreferences.DEFAULT,
     modifier: Modifier = Modifier,
 ) {
     var today by remember { mutableStateOf(LocalDate.now()) }
@@ -135,7 +140,9 @@ fun HomeScreen(
                             Text("${todayCourses.size} 门", style = MaterialTheme.typography.labelMedium, color = Moss)
                         }
                     }
-                    items(todayCourses, key = { it.id }) { course -> HomeCourseRow(course, appThemePalette) }
+                    items(todayCourses, key = { it.id }) {
+                        HomeCourseRow(course = it, appThemePalette = appThemePalette, displayPreferences = displayPreferences)
+                    }
                 }
             }
         }
@@ -149,7 +156,12 @@ fun HomeScreen(
     }
 }
 @Composable
-private fun HomeCourseRow(course: Course, appThemePalette: AppThemePalette) {
+private fun HomeCourseRow(
+    course: Course,
+    appThemePalette: AppThemePalette,
+    displayPreferences: ScheduleDisplayPreferences,
+) {
+    val verticalPadding = (displayPreferences.rowHeightDp / 5).coerceIn(8, 14).dp
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         Column(Modifier.width(72.dp).padding(top = 8.dp), horizontalAlignment = Alignment.End) {
             Text(course.start?.let { "第 $it 节" } ?: "待定", style = MaterialTheme.typography.labelLarge, color = Ink, fontWeight = FontWeight.Bold)
@@ -159,17 +171,25 @@ private fun HomeCourseRow(course: Course, appThemePalette: AppThemePalette) {
         Card(
             modifier = Modifier.weight(1f),
             colors = CardDefaults.cardColors(containerColor = courseTint(course.id, appThemePalette)),
-            shape = MaterialTheme.shapes.medium,
+            shape = RoundedCornerShape(displayPreferences.cardCornerRadiusDp.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
             Box(Modifier.fillMaxWidth()) {
-                Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 12.dp)) {
-                    Text(course.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    if (course.room.isNotBlank()) {
+                Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = verticalPadding, bottom = verticalPadding)) {
+                    Text(
+                        course.name,
+                        style = TextStyle(fontSize = (displayPreferences.courseFontSizeSp + 2).sp, fontWeight = FontWeight.Bold),
+                        color = Ink,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    if (displayPreferences.showCourseLocation && course.room.isNotBlank()) {
                         Text("@${course.room}", style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = 0.78f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                 }
-                Box(Modifier.width(4.dp).matchParentSize().background(courseAccent(course.id, appThemePalette)))
+                if (displayPreferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) {
+                    Box(Modifier.width(4.dp).matchParentSize().background(courseAccent(course.id, appThemePalette)))
+                }
             }
         }
     }

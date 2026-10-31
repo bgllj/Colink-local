@@ -17,7 +17,9 @@ enum class AppThemePalette(
 ) {
     CLASSIC("classic", "默认", Color(0xFFECE7B2)),
     MINT("mint", "薄荷", Color(0xFFD6F3E5)),
-    OCEAN("ocean", "海盐", Color(0xFFD6EAF8));
+    OCEAN("ocean", "海盐", Color(0xFFD6EAF8)),
+    SUNSET("sunset", "日落", Color(0xFFF4D9D2)),
+    LAVENDER("lavender", "薰衣草", Color(0xFFE8E2F3));
 
     companion object {
         fun fromStorageKey(key: String?): AppThemePalette =
@@ -94,6 +96,30 @@ private val oceanCourseTints = listOf(
         Color(0xFFEBD8D0), Color(0xFFE8D9ED), Color(0xFFDCDCF2), Color(0xFFCCDCEC),
 )
 
+private val sunsetCourseAccents = listOf(
+    Color(0xFF9A5147), Color(0xFF3D6C7D), Color(0xFF58745D), Color(0xFF8A672D),
+    Color(0xFF725A82), Color(0xFF41767A), Color(0xFF9A6343), Color(0xFF596D8A),
+    Color(0xFF6C7450), Color(0xFF8A5368), Color(0xFF4B7669), Color(0xFF806044),
+)
+
+private val sunsetCourseTints = listOf(
+    Color(0xFFF5DDD7), Color(0xFFD9EAF0), Color(0xFFE0EBDC), Color(0xFFF2E6C9),
+    Color(0xFFE8DFF0), Color(0xFFD6E9E7), Color(0xFFF0E0D2), Color(0xFFDDE5F0),
+    Color(0xFFE8E9D7), Color(0xFFF0DCE5), Color(0xFFDDEBE1), Color(0xFFECE2D5),
+)
+
+private val lavenderCourseAccents = listOf(
+    Color(0xFF596A87), Color(0xFF48746C), Color(0xFF84657C), Color(0xFF7A7047),
+    Color(0xFF4F7182), Color(0xFF81614E), Color(0xFF56775B), Color(0xFF695D8A),
+    Color(0xFF8A5E66), Color(0xFF496D78), Color(0xFF766C4A), Color(0xFF5B718F),
+)
+
+private val lavenderCourseTints = listOf(
+    Color(0xFFDDE5F2), Color(0xFFD8EBE5), Color(0xFFECE0EC), Color(0xFFF0E9CF),
+    Color(0xFFD9E9EF), Color(0xFFEFE1D6), Color(0xFFDDEBDD), Color(0xFFE5DFF2),
+    Color(0xFFF0DDE0), Color(0xFFD9E9E8), Color(0xFFECE8D8), Color(0xFFDCE5F0),
+)
+
 private val themeColors = mapOf(
     AppThemePalette.CLASSIC to ColinkColors(
         paper = Color(0xFFFFFAFE),
@@ -136,6 +162,34 @@ private val themeColors = mapOf(
         outline = Color(0xFF70828E),
         courseAccents = oceanCourseAccents,
         courseTints = oceanCourseTints,
+    ),
+    AppThemePalette.SUNSET to ColinkColors(
+        paper = Color(0xFFFFF8F5),
+        paperLight = Color(0xFFFFFFFF),
+        ink = Color(0xFF342825),
+        green = Color(0xFF9A5147),
+        greenSoft = Color(0xFFF4DED8),
+        moss = Color(0xFF78625C),
+        sand = Color(0xFFF3E3D4),
+        line = Color(0xFFEDE1DD),
+        surfaceVariant = Color(0xFFF6ECE8),
+        outline = Color(0xFF8A756E),
+        courseAccents = sunsetCourseAccents,
+        courseTints = sunsetCourseTints,
+    ),
+    AppThemePalette.LAVENDER to ColinkColors(
+        paper = Color(0xFFF9F8FC),
+        paperLight = Color(0xFFFFFFFF),
+        ink = Color(0xFF292833),
+        green = Color(0xFF625C7C),
+        greenSoft = Color(0xFFE8E4F0),
+        moss = Color(0xFF6D697B),
+        sand = Color(0xFFF1EBD9),
+        line = Color(0xFFE6E3EC),
+        surfaceVariant = Color(0xFFF1EFF6),
+        outline = Color(0xFF787386),
+        courseAccents = lavenderCourseAccents,
+        courseTints = lavenderCourseTints,
     ),
 )
 

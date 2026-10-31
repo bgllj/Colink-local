@@ -19,6 +19,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,7 +40,10 @@ import com.colink.app.data.toDisplayCourses
 import com.colink.app.importflow.ImportFlowService
 import com.colink.app.ui.home.HomeScreen
 import com.colink.app.ui.imports.ImportScreen
+import com.colink.app.ui.profile.PersonalizationSettingsScreen
 import com.colink.app.ui.profile.ProfileScreen
+import com.colink.app.ui.schedule.CourseCardEffect
+import com.colink.app.ui.schedule.ScheduleDisplayPreferences
 import com.colink.app.ui.schedule.ScheduleScreen
 import com.colink.app.ui.theme.AppThemePalette
 import com.colink.app.ui.theme.ColinkTheme
@@ -69,6 +73,7 @@ fun ColinkApp() {
         val defaultSemesterStart = LocalDate.of(systemToday.year, 9, 1)
         var selectedTab by rememberSaveable { mutableIntStateOf(0) }
         var showImport by rememberSaveable { mutableStateOf(false) }
+        var showPersonalization by rememberSaveable { mutableStateOf(false) }
         var profile by remember {
             mutableStateOf(
                 UserProfile(
@@ -99,6 +104,24 @@ fun ColinkApp() {
         }
         var showWeekends by remember {
             mutableStateOf(preferences.getBoolean("showWeekends", true))
+        }
+        var displayPreferences by remember {
+            val defaults = ScheduleDisplayPreferences.DEFAULT
+            mutableStateOf(
+                ScheduleDisplayPreferences(
+                    showCourseLocation = preferences.getBoolean("showCourseLocation", defaults.showCourseLocation),
+                    showCoursePeriod = preferences.getBoolean("showCoursePeriod", defaults.showCoursePeriod),
+                    showDateUnderDay = preferences.getBoolean("showDateUnderDay", defaults.showDateUnderDay),
+                    showGridLines = preferences.getBoolean("showGridLines", defaults.showGridLines),
+                    courseCardEffect = CourseCardEffect.fromStorageKey(preferences.getString("courseCardEffect", null)),
+                    rowHeightDp = preferences.getInt("scheduleRowHeightDp", defaults.rowHeightDp)
+                        .takeIf { it in ScheduleDisplayPreferences.ROW_HEIGHT_OPTIONS } ?: defaults.rowHeightDp,
+                    courseFontSizeSp = preferences.getInt("scheduleCourseFontSizeSp", defaults.courseFontSizeSp)
+                        .takeIf { it in ScheduleDisplayPreferences.FONT_SIZE_OPTIONS } ?: defaults.courseFontSizeSp,
+                    cardCornerRadiusDp = preferences.getInt("scheduleCardCornerRadiusDp", defaults.cardCornerRadiusDp)
+                        .takeIf { it in ScheduleDisplayPreferences.CORNER_RADIUS_OPTIONS } ?: defaults.cardCornerRadiusDp,
+                ),
+            )
         }
         var courseLoadState by remember { mutableStateOf<CourseLoadState>(CourseLoadState.Loading) }
         var sourceFileName by remember { mutableStateOf<String?>(null) }
@@ -151,11 +174,15 @@ fun ColinkApp() {
             }
         }
 
+        BackHandler(enabled = showPersonalization) {
+            showPersonalization = false
+        }
+
         Box(Modifier.fillMaxSize().background(Paper)) {
             Scaffold(
                 containerColor = Color.Transparent,
                 bottomBar = {
-                    if (!showImport) {
+                    if (!showImport && !showPersonalization) {
                         NavigationBar(containerColor = PaperLight) {
                             NavigationBarItem(
                                 selected = selectedTab == 0,
@@ -208,6 +235,20 @@ fun ColinkApp() {
                         profile = profile,
                         semesterStart = semesterStart,
                         showWeekends = showWeekends,
+                        displayPreferences = displayPreferences,
+                        onDisplayPreferencesChange = { updated ->
+                            displayPreferences = updated
+                            preferences.edit()
+                                .putBoolean("showCourseLocation", updated.showCourseLocation)
+                                .putBoolean("showCoursePeriod", updated.showCoursePeriod)
+                                .putBoolean("showDateUnderDay", updated.showDateUnderDay)
+                                .putBoolean("showGridLines", updated.showGridLines)
+                                .putString("courseCardEffect", updated.courseCardEffect.storageKey)
+                                .putInt("scheduleRowHeightDp", updated.rowHeightDp)
+                                .putInt("scheduleCourseFontSizeSp", updated.courseFontSizeSp)
+                                .putInt("scheduleCardCornerRadiusDp", updated.cardCornerRadiusDp)
+                                .apply()
+                        },
                         onShowWeekendsChange = { enabled ->
                             showWeekends = enabled
                             preferences.edit().putBoolean("showWeekends", enabled).apply()
@@ -230,6 +271,9 @@ fun ColinkApp() {
                         },
                         maxWeek = (courseLoadState as? CourseLoadState.Ready)?.semester?.maxWeek ?: 32,
                         courseLoadState = courseLoadState,
+                        showPersonalization = showPersonalization,
+                        onOpenPersonalization = { showPersonalization = true },
+                        onClosePersonalization = { showPersonalization = false },
                         onRetry = { refreshTick += 1 },
                         onImportClick = { showImport = true },
                         sourceFileName = sourceFileName,
@@ -260,20 +304,35 @@ private fun AppContent(
     profile: UserProfile,
     semesterStart: LocalDate,
     showWeekends: Boolean,
+    displayPreferences: ScheduleDisplayPreferences,
+    onDisplayPreferencesChange: (ScheduleDisplayPreferences) -> Unit,
     onShowWeekendsChange: (Boolean) -> Unit,
     appThemePalette: AppThemePalette,
     onAppThemePaletteChange: (AppThemePalette) -> Unit,
     onSemesterStartChange: (LocalDate) -> Unit,
     maxWeek: Int,
     courseLoadState: CourseLoadState,
+    showPersonalization: Boolean,
+    onOpenPersonalization: () -> Unit,
+    onClosePersonalization: () -> Unit,
     onRetry: () -> Unit,
     onImportClick: () -> Unit,
     sourceFileName: String?,
     importedAt: String?,
     onSaveProfile: (UserProfile) -> Unit,
 ) {
-    when (selectedTab) {
-        0 -> HomeScreen(
+    when {
+        showPersonalization -> PersonalizationSettingsScreen(
+            appThemePalette = appThemePalette,
+            onAppThemePaletteChange = onAppThemePaletteChange,
+            showWeekends = showWeekends,
+            onShowWeekendsChange = onShowWeekendsChange,
+            displayPreferences = displayPreferences,
+            onDisplayPreferencesChange = onDisplayPreferencesChange,
+            onBack = onClosePersonalization,
+            modifier = Modifier.padding(padding),
+        )
+        selectedTab == 0 -> HomeScreen(
             semesterStart = semesterStart,
             maxWeek = maxWeek,
             loadState = courseLoadState,
@@ -281,9 +340,10 @@ private fun AppContent(
             onOpenSchedule = { onSelectTab(1) },
             onImportClick = onImportClick,
             appThemePalette = appThemePalette,
+            displayPreferences = displayPreferences,
             modifier = Modifier.padding(padding),
         )
-        1 -> ScheduleScreen(
+        selectedTab == 1 -> ScheduleScreen(
             semesterStart = semesterStart,
             maxWeek = maxWeek,
             loadState = courseLoadState,
@@ -291,20 +351,18 @@ private fun AppContent(
             onImportClick = onImportClick,
             showWeekends = showWeekends,
             appThemePalette = appThemePalette,
+            displayPreferences = displayPreferences,
             modifier = Modifier.padding(padding),
         )
         else -> ProfileScreen(
             profile = profile,
             semesterStart = semesterStart,
             onSemesterStartChange = onSemesterStartChange,
-            showWeekends = showWeekends,
-            onShowWeekendsChange = onShowWeekendsChange,
-            appThemePalette = appThemePalette,
-            onAppThemePaletteChange = onAppThemePaletteChange,
             onSave = onSaveProfile,
             sourceFileName = sourceFileName,
             importedAt = importedAt,
             onImportClick = onImportClick,
+            onOpenPersonalization = onOpenPersonalization,
             modifier = Modifier.padding(padding),
         )
     }
