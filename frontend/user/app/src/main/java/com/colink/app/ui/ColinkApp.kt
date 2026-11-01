@@ -51,6 +51,7 @@ import com.colink.app.ui.theme.ColinkTheme
 import com.colink.app.ui.theme.DEFAULT_CUSTOM_BACKGROUND_ARGB
 import com.colink.app.ui.theme.PaperLight
 import com.colink.app.ui.theme.appBackgroundBrush
+import com.colink.app.ui.widget.TodayScheduleWidgetProvider
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -180,6 +181,7 @@ fun ColinkApp() {
                     CourseLoadState.Error("课表数据损坏，请重新导入")
                 }
             }
+            TodayScheduleWidgetProvider.refreshAll(context)
         }
 
         BackHandler(enabled = showPersonalization) {

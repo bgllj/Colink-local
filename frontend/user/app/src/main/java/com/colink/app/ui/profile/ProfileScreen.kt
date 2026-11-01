@@ -2,6 +2,11 @@ package com.colink.app.ui.profile
 
 /* Settings layout adapted from ShiGuangSchedule v2.1.0 (Apache-2.0). */
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
+import android.content.Intent
+import android.os.Build
+import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -34,6 +39,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -64,6 +70,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -82,6 +89,7 @@ import com.colink.app.ui.theme.Paper
 import com.colink.app.ui.theme.PaperLight
 import com.colink.app.ui.theme.courseAccent
 import com.colink.app.ui.theme.courseTint
+import com.colink.app.ui.widget.TodayScheduleWidgetProvider
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -282,6 +290,7 @@ fun PersonalizationSettingsScreen(
             contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+            item { AddTodayWidgetPreference() }
             item {
                 SettingsSection(title = "主题") {
                     ThemePalettePreference(appThemePalette, onAppThemePaletteChange)
@@ -372,6 +381,42 @@ fun PersonalizationSettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text("恢复卡片与课表显示默认值") }
             }
+        }
+    }
+}
+
+@Composable
+private fun AddTodayWidgetPreference() {
+    val context = LocalContext.current
+    SettingsSection(title = "桌面组件") {
+        OutlinedButton(
+            onClick = {
+                val manager = AppWidgetManager.getInstance(context)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && manager.isRequestPinAppWidgetSupported) {
+                    val callback = android.app.PendingIntent.getBroadcast(
+                        context,
+                        0,
+                        Intent(context, com.colink.app.ui.widget.WidgetPinResultReceiver::class.java).apply {
+                            action = com.colink.app.ui.widget.WidgetPinResultReceiver.ACTION_PIN_RESULT
+                        },
+                        android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_IMMUTABLE,
+                    )
+                    val accepted = manager.requestPinAppWidget(
+                        ComponentName(context, TodayScheduleWidgetProvider::class.java),
+                        null,
+                        callback,
+                    )
+                    val message = if (accepted) "已发送桌面添加请求，请在桌面确认添加" else "桌面未接受添加请求"
+                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                } else {
+                    Toast.makeText(context, "当前桌面不支持快速添加组件", Toast.LENGTH_LONG).show()
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Icon(Icons.Default.Widgets, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("添加今日课表组件")
         }
     }
 }

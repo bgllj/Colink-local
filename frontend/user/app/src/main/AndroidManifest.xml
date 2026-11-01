@@ -12,5 +12,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <receiver
+            android:name=".ui.widget.TodayScheduleWidgetProvider"
+            android:exported="true"
+            android:label="Colink 今日课表">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.TIME_CHANGED" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/today_schedule_widget_info" />
+        </receiver>
+        <receiver
+            android:name=".ui.widget.WidgetPinResultReceiver"
+            android:exported="false" />
     </application>
 </manifest>
