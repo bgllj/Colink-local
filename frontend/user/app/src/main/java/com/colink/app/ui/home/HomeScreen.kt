@@ -53,7 +53,6 @@ import com.colink.app.ui.theme.Green
 import com.colink.app.ui.theme.GreenSoft
 import com.colink.app.ui.theme.Ink
 import com.colink.app.ui.theme.Moss
-import com.colink.app.ui.theme.Paper
 import com.colink.app.ui.theme.PaperLight
 import com.colink.app.ui.theme.courseAccent
 import com.colink.app.ui.theme.courseTint
@@ -91,7 +90,7 @@ fun HomeScreen(
         .sortedBy { it.start ?: Int.MAX_VALUE }
 
     LazyColumn(
-        modifier = modifier.fillMaxSize().background(Paper),
+        modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {

@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -59,13 +60,18 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.colink.app.UserProfile
 import com.colink.app.ui.schedule.CourseCardEffect
 import com.colink.app.ui.schedule.ScheduleDisplayPreferences
+import com.colink.app.ui.theme.AppBackgroundMode
 import com.colink.app.ui.theme.AppThemePalette
 import com.colink.app.ui.theme.Green
 import com.colink.app.ui.theme.GreenSoft
@@ -99,7 +105,7 @@ fun ProfileScreen(
     var editingSemesterStart by rememberSaveable { mutableStateOf(false) }
     var draft by remember(profile) { mutableStateOf(profile) }
     LazyColumn(
-        modifier = modifier.fillMaxSize().background(Paper),
+        modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -246,6 +252,10 @@ private fun PersonalizationEntryButton(onClick: () -> Unit) {
 fun PersonalizationSettingsScreen(
     appThemePalette: AppThemePalette,
     onAppThemePaletteChange: (AppThemePalette) -> Unit,
+    backgroundMode: AppBackgroundMode,
+    onBackgroundModeChange: (AppBackgroundMode) -> Unit,
+    customBackgroundArgb: Int,
+    onCustomBackgroundChange: (Int) -> Unit,
     showWeekends: Boolean,
     onShowWeekendsChange: (Boolean) -> Unit,
     displayPreferences: ScheduleDisplayPreferences,
@@ -255,7 +265,7 @@ fun PersonalizationSettingsScreen(
 ) {
     Scaffold(
         modifier = modifier,
-        containerColor = Paper,
+        containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
                 title = { Text("个性化设置", style = MaterialTheme.typography.titleLarge) },
@@ -268,7 +278,7 @@ fun PersonalizationSettingsScreen(
         },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().background(Paper).padding(padding),
+            modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
@@ -277,7 +287,17 @@ fun PersonalizationSettingsScreen(
                     ThemePalettePreference(appThemePalette, onAppThemePaletteChange)
                 }
             }
-            item { ThemeCardPreview(appThemePalette, displayPreferences.courseCardEffect) }
+            item {
+                SettingsSection(title = "页面背景") {
+                    BackgroundPreference(
+                        mode = backgroundMode,
+                        customBackgroundArgb = customBackgroundArgb,
+                        onModeChange = onBackgroundModeChange,
+                        onCustomBackgroundChange = onCustomBackgroundChange,
+                    )
+                }
+            }
+            item { ThemeCardPreview(appThemePalette, displayPreferences) }
             item {
                 SettingsSection(title = "课程卡片") {
                     Column {
@@ -444,27 +464,143 @@ private fun ThemePalettePreference(palette: AppThemePalette, onPaletteChange: (A
 }
 
 @Composable
-private fun ThemeCardPreview(palette: AppThemePalette, effect: CourseCardEffect) {
+private fun ThemeCardPreview(palette: AppThemePalette, preferences: ScheduleDisplayPreferences) {
     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
         Text("课程卡片预览", style = MaterialTheme.typography.titleSmall, color = Ink, fontWeight = FontWeight.SemiBold)
         Card(
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(preferences.cardCornerRadiusDp.dp),
             colors = CardDefaults.cardColors(containerColor = courseTint("theme-preview", palette)),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Row(Modifier.fillMaxWidth().height(82.dp)) {
-                if (effect == CourseCardEffect.ACCENT_STRIPE) {
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                if (preferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) {
                     Box(Modifier.width(4.dp).fillMaxHeight().background(courseAccent("theme-preview", palette)))
                 }
                 Column(
-                    Modifier.weight(1f).padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                    Modifier.weight(1f).padding(
+                        start = 12.dp,
+                        end = 12.dp,
+                        top = (preferences.rowHeightDp / 6).coerceIn(8, 12).dp,
+                        bottom = (preferences.rowHeightDp / 6).coerceIn(8, 12).dp,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    Text("星期一 · 9月1日", style = MaterialTheme.typography.labelSmall, color = Ink.copy(alpha = 0.7f))
-                    Text("高等数学", style = MaterialTheme.typography.titleSmall, color = Ink, fontWeight = FontWeight.Bold)
-                    Text("第 1–2 节 · 教学楼 A203", style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = 0.78f))
+                    if (preferences.showDateUnderDay) {
+                        Text("星期一 · 9月1日", style = MaterialTheme.typography.labelSmall, color = Ink.copy(alpha = 0.7f))
+                    }
+                    Text(
+                        "高等数学",
+                        style = TextStyle(
+                            fontSize = preferences.courseFontSizeSp.sp,
+                            lineHeight = (preferences.courseFontSizeSp + 2).sp,
+                            fontWeight = FontWeight.Bold,
+                        ),
+                        color = Ink,
+                    )
+                    if (preferences.showCoursePeriod) {
+                        Text(
+                            "第 1–2 节",
+                            style = TextStyle(fontSize = (preferences.courseFontSizeSp - 2).coerceAtLeast(8).sp),
+                            color = Ink.copy(alpha = 0.78f),
+                        )
+                    }
+                    if (preferences.showCourseLocation) {
+                        Text(
+                            "@教学楼 A203",
+                            style = TextStyle(fontSize = (preferences.courseFontSizeSp - 2).coerceAtLeast(8).sp),
+                            color = Ink.copy(alpha = 0.78f),
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun BackgroundPreference(
+    mode: AppBackgroundMode,
+    customBackgroundArgb: Int,
+    onModeChange: (AppBackgroundMode) -> Unit,
+    onCustomBackgroundChange: (Int) -> Unit,
+) {
+    val hexColors = "0123456789ABCDEF"
+    var hexInput by remember(customBackgroundArgb) {
+        mutableStateOf("%06X".format(customBackgroundArgb and 0x00FFFFFF))
+    }
+    val presets = listOf(
+        0xFFF1F3EF.toInt(),
+        0xFFFFF1DD.toInt(),
+        0xFFEAF4FB.toInt(),
+        0xFFF0ECF8.toInt(),
+        0xFF202832.toInt(),
+        0xFF263B34.toInt(),
+    )
+    Column(
+        Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 13.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text("背景样式", style = MaterialTheme.typography.bodyLarge, color = Ink, fontWeight = FontWeight.SemiBold)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppBackgroundMode.values().forEach { option ->
+                val selected = option == mode
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = if (selected) GreenSoft else Paper,
+                    modifier = Modifier
+                        .weight(1f)
+                        .border(1.dp, if (selected) Green else Line, RoundedCornerShape(8.dp))
+                        .clickable { onModeChange(option) },
+                ) {
+                    Box(Modifier.padding(horizontal = 8.dp, vertical = 10.dp), contentAlignment = Alignment.Center) {
+                        Text(option.label, style = MaterialTheme.typography.labelLarge, color = Ink)
+                    }
+                }
+            }
+        }
+        Text(
+            when (mode) {
+                AppBackgroundMode.THEME -> "背景跟随当前主题配色"
+                AppBackgroundMode.CUSTOM -> "选择预设色或输入十六进制颜色"
+                AppBackgroundMode.DYNAMIC -> "背景颜色缓慢循环变化，可搭配任意主题使用"
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = Moss,
+        )
+        if (mode == AppBackgroundMode.CUSTOM) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                presets.forEach { argb ->
+                    val selected = argb == customBackgroundArgb
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(argb),
+                        modifier = Modifier
+                            .size(30.dp)
+                            .border(2.dp, if (selected) Green else Line, CircleShape)
+                            .clickable {
+                                hexInput = "%06X".format(argb and 0x00FFFFFF)
+                                onCustomBackgroundChange(argb)
+                            },
+                    ) {}
+                }
+            }
+            OutlinedTextField(
+                value = hexInput,
+                onValueChange = { input ->
+                    val normalized = input.uppercase().filter { it in hexColors }.take(6)
+                    hexInput = normalized
+                    if (normalized.length == 6) {
+                        normalized.toLongOrNull(16)?.let { value ->
+                            onCustomBackgroundChange((0xFF000000L or value).toInt())
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("背景颜色") },
+                leadingIcon = { Text("#", color = Moss) },
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge,
+            )
         }
     }
 }

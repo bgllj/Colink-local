@@ -45,10 +45,12 @@ import com.colink.app.ui.profile.ProfileScreen
 import com.colink.app.ui.schedule.CourseCardEffect
 import com.colink.app.ui.schedule.ScheduleDisplayPreferences
 import com.colink.app.ui.schedule.ScheduleScreen
+import com.colink.app.ui.theme.AppBackgroundMode
 import com.colink.app.ui.theme.AppThemePalette
 import com.colink.app.ui.theme.ColinkTheme
-import com.colink.app.ui.theme.Paper
+import com.colink.app.ui.theme.DEFAULT_CUSTOM_BACKGROUND_ARGB
 import com.colink.app.ui.theme.PaperLight
+import com.colink.app.ui.theme.appBackgroundBrush
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -64,7 +66,13 @@ fun ColinkApp() {
             ),
         )
     }
-    ColinkTheme(appThemePalette) {
+    var backgroundMode by remember {
+        mutableStateOf(AppBackgroundMode.fromStorageKey(preferences.getString("appBackgroundMode", null)))
+    }
+    var customBackgroundArgb by remember {
+        mutableIntStateOf(preferences.getInt("customBackgroundArgb", DEFAULT_CUSTOM_BACKGROUND_ARGB))
+    }
+    ColinkTheme(appThemePalette, backgroundMode, customBackgroundArgb) {
         val scheduleStore = remember {
             SharedPrefsLocalScheduleStore(context.getSharedPreferences("colink_local_schedule", 0))
         }
@@ -178,7 +186,11 @@ fun ColinkApp() {
             showPersonalization = false
         }
 
-        Box(Modifier.fillMaxSize().background(Paper)) {
+        Box(
+            Modifier.fillMaxSize().background(
+                appBackgroundBrush(appThemePalette, backgroundMode, customBackgroundArgb),
+            ),
+        ) {
             Scaffold(
                 containerColor = Color.Transparent,
                 bottomBar = {
@@ -254,6 +266,16 @@ fun ColinkApp() {
                             preferences.edit().putBoolean("showWeekends", enabled).apply()
                         },
                         appThemePalette = appThemePalette,
+                        backgroundMode = backgroundMode,
+                        customBackgroundArgb = customBackgroundArgb,
+                        onBackgroundModeChange = { mode ->
+                            backgroundMode = mode
+                            preferences.edit().putString("appBackgroundMode", mode.storageKey).apply()
+                        },
+                        onCustomBackgroundChange = { argb ->
+                            customBackgroundArgb = argb
+                            preferences.edit().putInt("customBackgroundArgb", argb).apply()
+                        },
                         onAppThemePaletteChange = { selectedPalette ->
                             appThemePalette = selectedPalette
                             preferences.edit()
@@ -308,6 +330,10 @@ private fun AppContent(
     onDisplayPreferencesChange: (ScheduleDisplayPreferences) -> Unit,
     onShowWeekendsChange: (Boolean) -> Unit,
     appThemePalette: AppThemePalette,
+    backgroundMode: AppBackgroundMode,
+    customBackgroundArgb: Int,
+    onBackgroundModeChange: (AppBackgroundMode) -> Unit,
+    onCustomBackgroundChange: (Int) -> Unit,
     onAppThemePaletteChange: (AppThemePalette) -> Unit,
     onSemesterStartChange: (LocalDate) -> Unit,
     maxWeek: Int,
@@ -325,6 +351,10 @@ private fun AppContent(
         showPersonalization -> PersonalizationSettingsScreen(
             appThemePalette = appThemePalette,
             onAppThemePaletteChange = onAppThemePaletteChange,
+            backgroundMode = backgroundMode,
+            onBackgroundModeChange = onBackgroundModeChange,
+            customBackgroundArgb = customBackgroundArgb,
+            onCustomBackgroundChange = onCustomBackgroundChange,
             showWeekends = showWeekends,
             onShowWeekendsChange = onShowWeekendsChange,
             displayPreferences = displayPreferences,
