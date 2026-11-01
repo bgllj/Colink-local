@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -173,8 +175,11 @@ private fun HomeCourseRow(
             shape = RoundedCornerShape(displayPreferences.cardCornerRadiusDp.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         ) {
-            Box(Modifier.fillMaxWidth()) {
-                Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = verticalPadding, bottom = verticalPadding)) {
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                if (displayPreferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) {
+                    Box(Modifier.width(4.dp).fillMaxHeight().background(courseAccent(course.id, appThemePalette)))
+                }
+                Column(Modifier.weight(1f).padding(start = 12.dp, end = 12.dp, top = verticalPadding, bottom = verticalPadding)) {
                     Text(
                         course.name,
                         style = TextStyle(fontSize = (displayPreferences.courseFontSizeSp + 2).sp, fontWeight = FontWeight.Bold),
@@ -185,9 +190,6 @@ private fun HomeCourseRow(
                     if (displayPreferences.showCourseLocation && course.room.isNotBlank()) {
                         Text("@${course.room}", style = MaterialTheme.typography.bodySmall, color = Ink.copy(alpha = 0.78f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
-                }
-                if (displayPreferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) {
-                    Box(Modifier.width(4.dp).matchParentSize().background(courseAccent(course.id, appThemePalette)))
                 }
             }
         }

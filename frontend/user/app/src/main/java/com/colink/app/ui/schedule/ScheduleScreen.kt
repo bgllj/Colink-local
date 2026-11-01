@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
@@ -461,54 +463,56 @@ private fun WeekCourseBlock(
             .background(courseTint(course.id, appThemePalette))
             .clickable(onClick = onClick)
     ) {
-        Column(
-            Modifier.fillMaxSize().padding(
-                start = if (displayPreferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) 8.dp else 4.dp,
-                end = 4.dp,
-                top = 4.dp,
-                bottom = 4.dp,
-            ),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                course.name,
-                color = Ink,
-                style = TextStyle(
-                    fontSize = displayPreferences.courseFontSizeSp.sp,
-                    lineHeight = (displayPreferences.courseFontSizeSp + 2).sp,
-                    fontWeight = FontWeight.Bold,
+        Row(Modifier.fillMaxSize()) {
+            if (displayPreferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) {
+                Box(Modifier.width(4.dp).fillMaxHeight().background(courseAccent(course.id, appThemePalette)))
+            }
+            Column(
+                Modifier.weight(1f).fillMaxHeight().padding(
+                    start = 4.dp,
+                    end = 4.dp,
+                    top = 4.dp,
+                    bottom = 4.dp,
                 ),
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (displayPreferences.showCoursePeriod) {
-                val start = course.start
-                val end = course.end
-                if (start != null) {
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    course.name,
+                    color = Ink,
+                    style = TextStyle(
+                        fontSize = displayPreferences.courseFontSizeSp.sp,
+                        lineHeight = (displayPreferences.courseFontSizeSp + 2).sp,
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    maxLines = 4,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (displayPreferences.showCoursePeriod) {
+                    val start = course.start
+                    val end = course.end
+                    if (start != null) {
+                        Text(
+                            if (end != null && end > start) "第 $start–$end 节" else "第 $start 节",
+                            color = Ink.copy(alpha = 0.82f),
+                            style = TextStyle(fontSize = (displayPreferences.courseFontSizeSp - 2).coerceAtLeast(8).sp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                if (displayPreferences.showCourseLocation && course.room.isNotBlank()) {
                     Text(
-                        if (end != null && end > start) "第 $start–$end 节" else "第 $start 节",
+                        "@${course.room}",
                         color = Ink.copy(alpha = 0.82f),
-                        style = TextStyle(fontSize = (displayPreferences.courseFontSizeSp - 2).coerceAtLeast(8).sp),
-                        maxLines = 1,
+                        style = TextStyle(
+                            fontSize = (displayPreferences.courseFontSizeSp - 2).coerceAtLeast(8).sp,
+                            lineHeight = (displayPreferences.courseFontSizeSp).sp,
+                        ),
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
-            if (displayPreferences.showCourseLocation && course.room.isNotBlank()) {
-                Text(
-                    "@${course.room}",
-                    color = Ink.copy(alpha = 0.82f),
-                    style = TextStyle(
-                        fontSize = (displayPreferences.courseFontSizeSp - 2).coerceAtLeast(8).sp,
-                        lineHeight = (displayPreferences.courseFontSizeSp).sp,
-                    ),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-        if (displayPreferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) {
-            Box(Modifier.width(4.dp).matchParentSize().background(courseAccent(course.id, appThemePalette)))
         }
     }
 }
@@ -529,36 +533,31 @@ private fun UnscheduledCourseBlock(
             .background(courseTint(course.id, appThemePalette))
             .clickable { onCourseClick(course) },
     ) {
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = if (displayPreferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) 8.dp else 4.dp,
-                    end = 4.dp,
-                    top = 4.dp,
-                    bottom = 4.dp,
-                ),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                course.name,
-                color = Ink,
-                style = TextStyle(fontSize = displayPreferences.courseFontSizeSp.sp, fontWeight = FontWeight.SemiBold),
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (displayPreferences.showCourseLocation && course.room.isNotBlank()) {
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+            if (displayPreferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) {
+                Box(Modifier.width(4.dp).fillMaxHeight().background(courseAccent(course.id, appThemePalette)))
+            }
+            Column(
+                Modifier.weight(1f).padding(horizontal = 4.dp, vertical = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
                 Text(
-                    "@${course.room}",
-                    color = Ink.copy(alpha = 0.82f),
-                    style = TextStyle(fontSize = (displayPreferences.courseFontSizeSp - 2).coerceAtLeast(8).sp),
-                    maxLines = 1,
+                    course.name,
+                    color = Ink,
+                    style = TextStyle(fontSize = displayPreferences.courseFontSizeSp.sp, fontWeight = FontWeight.SemiBold),
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (displayPreferences.showCourseLocation && course.room.isNotBlank()) {
+                    Text(
+                        "@${course.room}",
+                        color = Ink.copy(alpha = 0.82f),
+                        style = TextStyle(fontSize = (displayPreferences.courseFontSizeSp - 2).coerceAtLeast(8).sp),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
-        }
-        if (displayPreferences.courseCardEffect == CourseCardEffect.ACCENT_STRIPE) {
-            Box(Modifier.width(4.dp).matchParentSize().background(courseAccent(course.id, appThemePalette)))
         }
     }
 }
