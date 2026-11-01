@@ -15,7 +15,7 @@ val keystoreProps = Properties().apply {
 }
 
 android { namespace = "com.colink.app"; compileSdk = 35
-    defaultConfig { applicationId = "com.colink.app"; minSdk = 29; targetSdk = 35; versionCode = 3; versionName = "1.0.2" }
+    defaultConfig { applicationId = "com.colink.app"; minSdk = 29; targetSdk = 35; versionCode = 4; versionName = "1.0.3" }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

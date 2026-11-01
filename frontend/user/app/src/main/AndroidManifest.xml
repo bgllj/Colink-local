@@ -5,6 +5,8 @@
     <application
         android:theme="@style/Theme.Colink"
         android:label="Colink"
+        android:icon="@drawable/ic_launcher"
+        android:roundIcon="@drawable/ic_launcher"
         android:usesCleartextTraffic="true">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
